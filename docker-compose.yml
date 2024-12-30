@@ -1,0 +1,14 @@
+services:
+  money_keeper_db:
+    image: postgres
+    container_name: money_keeper_db
+    restart: always
+    volumes:
+      - ./money-keeper/internal/db/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${MONEY_KEEPER_DB_USER}
+      POSTGRES_PASSWORD: ${MONEY_KEEPER_DB_PASSWORD}
+      POSTGRES_DB: ${MONEY_KEEPER_DB_NAME}
+    ports:
+      - "${MONEY_KEEPER_DB_PORT}:5432"
+
