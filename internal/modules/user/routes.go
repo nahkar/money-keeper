@@ -12,5 +12,6 @@ func UserRoutes(db *sql.DB, routes fiber.Router) {
 	userHandlers := NewUserHandlers(userService)
 
 	routes.Get("/users", userHandlers.GetAllUsers)
+	routes.Get("/users/:id", userHandlers.GetUser)
 	routes.Post("/users", userHandlers.CreateUser)
 }

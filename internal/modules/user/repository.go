@@ -2,6 +2,7 @@ package user
 
 import (
 	"database/sql"
+	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -43,6 +44,22 @@ func (r *UserRepository) FindAll() ([]UserResponse, error) {
 	}
 
 	return users, nil
+}
+
+func (r *UserRepository) FindById(id int) (UserResponse, error) {
+	var user UserResponse
+
+	err := r.DB.QueryRow(FindUserByIDQuery, id).
+		Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return UserResponse{}, fmt.Errorf("%w: user with id %d", ErrUserNotFound, id)
+		}
+		return UserResponse{}, err
+	}
+
+	return user, nil
 }
 
 func (r *UserRepository) Create(user User) (UserResponse, error) {

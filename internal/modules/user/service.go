@@ -12,6 +12,10 @@ func (s *UserService) GetAllUsers() ([]UserResponse, error) {
 	return s.Repo.FindAll()
 }
 
+func (s *UserService) GetUser(id int) (UserResponse, error) {
+	return s.Repo.FindById(id)
+}
+
 func (s *UserService) CreateUser(input CreateUserRequest) (UserResponse, error) {
 	return s.Repo.Create(User{
 		FirstName: input.FirstName,
