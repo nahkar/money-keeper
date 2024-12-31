@@ -12,7 +12,6 @@ bin/
 dist/
 
 # Go modules
-go.sum
 vendor/
 
 # IDE and editor files
