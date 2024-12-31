@@ -14,4 +14,5 @@ func UserRoutes(db *sql.DB, routes fiber.Router) {
 	routes.Get("/users", userHandlers.GetAllUsers)
 	routes.Get("/users/:id", userHandlers.GetUser)
 	routes.Post("/users", userHandlers.CreateUser)
+	routes.Delete("/users/:id", userHandlers.DeleteUser)
 }

@@ -18,7 +18,8 @@ func NewUserHandlers(service *UserService) *UserHandlers {
 func (h *UserHandlers) GetAllUsers(c *fiber.Ctx) error {
 	users, err := h.Service.GetAllUsers()
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return utils.HandleError(c, err, fiber.StatusInternalServerError)
+
 	}
 	return c.JSON(users)
 }
@@ -26,16 +27,16 @@ func (h *UserHandlers) GetAllUsers(c *fiber.Ctx) error {
 func (h *UserHandlers) GetUser(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid id"})
+		return utils.HandleError(c, err, fiber.StatusBadRequest)
 	}
 
 	user, err := h.Service.GetUser(id)
 
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+			return utils.HandleError(c, err, fiber.StatusNotFound)
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return utils.HandleError(c, err, fiber.StatusInternalServerError)
 	}
 	return c.JSON(user)
 }
@@ -43,7 +44,7 @@ func (h *UserHandlers) GetUser(c *fiber.Ctx) error {
 func (h *UserHandlers) CreateUser(c *fiber.Ctx) error {
 	var input CreateUserRequest
 	if err := c.BodyParser(&input); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid input"})
+		return utils.HandleError(c, err, fiber.StatusBadRequest)
 	}
 
 	if errors, err := utils.ValidateStruct(&input); err != nil {
@@ -55,7 +56,22 @@ func (h *UserHandlers) CreateUser(c *fiber.Ctx) error {
 
 	user, err := h.Service.CreateUser(input)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": utils.MapSQLError(err).Error()})
+		return utils.HandleError(c, utils.MapSQLError(err), fiber.StatusInternalServerError)
 	}
 	return c.JSON(user)
+}
+
+func (h *UserHandlers) DeleteUser(c *fiber.Ctx) error {
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return utils.HandleError(c, err, fiber.StatusBadRequest)
+	}
+
+	if err := h.Service.DeleteUser(id); err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return utils.HandleError(c, err, fiber.StatusNotFound)
+		}
+		return utils.HandleError(c, err, fiber.StatusInternalServerError)
+	}
+	return c.JSON(fiber.Map{"message": "User deleted successfully"})
 }

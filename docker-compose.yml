@@ -4,7 +4,7 @@ services:
     container_name: money_keeper_db
     restart: always
     volumes:
-      - ./money-keeper/internal/db/data:/var/lib/postgresql/data
+      - ./internal/db/data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${MONEY_KEEPER_DB_USER}
       POSTGRES_PASSWORD: ${MONEY_KEEPER_DB_PASSWORD}

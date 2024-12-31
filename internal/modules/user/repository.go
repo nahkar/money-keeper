@@ -83,3 +83,21 @@ func (r *UserRepository) Create(user User) (UserResponse, error) {
 		Age:       user.Age,
 	}, nil
 }
+
+func (r *UserRepository) Delete(id int) error {
+	result, err := r.DB.Exec(DeleteUserQuery, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("%w: user with id %d", ErrUserNotFound, id)
+	}
+
+	return nil
+}

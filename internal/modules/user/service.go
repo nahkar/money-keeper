@@ -25,3 +25,7 @@ func (s *UserService) CreateUser(input CreateUserRequest) (UserResponse, error) 
 		Password:  input.Password,
 	})
 }
+
+func (s *UserService) DeleteUser(id int) error {
+	return s.Repo.Delete(id)
+}
