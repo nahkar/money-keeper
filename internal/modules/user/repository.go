@@ -2,6 +2,8 @@ package user
 
 import (
 	"database/sql"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRepository struct {
@@ -12,7 +14,15 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{DB: db}
 }
 
-func (r *UserRepository) FindAll() ([]User, error) {
+func (r *UserRepository) hashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+func (r *UserRepository) FindAll() ([]UserResponse, error) {
 	rows, err := r.DB.Query(FindAllUsersQuery)
 	if err != nil {
 		return nil, err
@@ -20,12 +30,12 @@ func (r *UserRepository) FindAll() ([]User, error) {
 
 	defer rows.Close()
 
-	var users []User
+	var users []UserResponse
 
 	for rows.Next() {
-		var user User
+		var user UserResponse
 
-		if err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age); err != nil {
 			return nil, err
 		}
 
@@ -35,13 +45,24 @@ func (r *UserRepository) FindAll() ([]User, error) {
 	return users, nil
 }
 
-func (r *UserRepository) Create(user User) (User, error) {
-	err := r.DB.QueryRow(
+func (r *UserRepository) Create(user User) (UserResponse, error) {
+	hashedPassword, err := r.hashPassword(user.Password)
+	if err != nil {
+		return UserResponse{}, err
+	}
+
+	err = r.DB.QueryRow(
 		CreateUserQuery,
-		user.FirstName, user.LastName, user.Email, user.Age, user.Password,
+		user.FirstName, user.LastName, user.Email, user.Age, hashedPassword,
 	).Scan(&user.ID)
 	if err != nil {
-		return User{}, err
+		return UserResponse{}, err
 	}
-	return user, nil
+	return UserResponse{
+		ID:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Age:       user.Age,
+	}, nil
 }

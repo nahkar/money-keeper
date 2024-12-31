@@ -8,11 +8,11 @@ func NewUserService(repo *UserRepository) *UserService {
 	return &UserService{Repo: repo}
 }
 
-func (s *UserService) GetAllUsers() ([]User, error) {
+func (s *UserService) GetAllUsers() ([]UserResponse, error) {
 	return s.Repo.FindAll()
 }
 
-func (s *UserService) CreateUser(input CreateUserRequest) (User, error) {
+func (s *UserService) CreateUser(input CreateUserRequest) (UserResponse, error) {
 	return s.Repo.Create(User{
 		FirstName: input.FirstName,
 		LastName:  input.LastName,

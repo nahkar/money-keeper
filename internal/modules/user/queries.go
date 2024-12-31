@@ -2,7 +2,7 @@ package user
 
 const (
 	FindAllUsersQuery = `
-		SELECT user_id, first_name, last_name, email, age, created_at
+		SELECT user_id, first_name, last_name, email, age
 		FROM users
 	`
 
