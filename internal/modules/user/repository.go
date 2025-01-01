@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"dario.cat/mergo"
+	"github.com/nahkar/money-keeper/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -50,7 +52,7 @@ func (r *UserRepository) FindById(id int) (User, error) {
 	var user User
 
 	err := r.DB.QueryRow(FindUserByIDQuery, id).
-		Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age)
+		Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age, &user.Password)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -94,25 +96,25 @@ func (r *UserRepository) Update(id int, user UpdateUserRequest) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
-	// TODO: add mergo library to merge fields
-	if user.FirstName != nil {
-		currentUser.FirstName = *user.FirstName
+
+	partialUpdate := User{
+		FirstName: utils.DerefString(user.FirstName),
+		LastName:  utils.DerefString(user.LastName),
+		Email:     utils.DerefString(user.Email),
+		Age:       utils.DerefInt(user.Age),
+		Password:  utils.DerefString(user.Password),
 	}
-	if user.LastName != nil {
-		currentUser.LastName = *user.LastName
-	}
-	if user.Email != nil {
-		currentUser.Email = *user.Email
-	}
-	if user.Age != nil {
-		currentUser.Age = *user.Age
-	}
+
 	if user.Password != nil {
 		hashedPassword, err := r.hashPassword(*user.Password)
 		if err != nil {
 			return User{}, err
 		}
-		currentUser.Password = hashedPassword
+		partialUpdate.Password = hashedPassword
+	}
+
+	if err := mergo.Merge(&currentUser, partialUpdate, mergo.WithOverride); err != nil {
+		return User{}, err
 	}
 
 	result, err := r.DB.Exec(
@@ -128,7 +130,6 @@ func (r *UserRepository) Update(id int, user UpdateUserRequest) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
-
 	if rowsAffected == 0 {
 		return User{}, fmt.Errorf("%w: user with id %d", ErrUserNotFound, id)
 	}

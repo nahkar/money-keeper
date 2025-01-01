@@ -7,7 +7,7 @@ const (
 	`
 
 	FindUserByIDQuery = `
-		SELECT user_id, first_name, last_name, email, age
+		SELECT user_id, first_name, last_name, email, age, password
 		FROM users 
 		WHERE user_id = $1
 	`
