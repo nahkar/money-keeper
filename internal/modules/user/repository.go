@@ -23,7 +23,7 @@ func (r *UserRepository) hashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-func (r *UserRepository) FindAll() ([]UserResponse, error) {
+func (r *UserRepository) FindAll() ([]User, error) {
 	rows, err := r.DB.Query(FindAllUsersQuery)
 	if err != nil {
 		return nil, err
@@ -31,10 +31,10 @@ func (r *UserRepository) FindAll() ([]UserResponse, error) {
 
 	defer rows.Close()
 
-	var users []UserResponse
+	var users []User
 
 	for rows.Next() {
-		var user UserResponse
+		var user User
 
 		if err := rows.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age); err != nil {
 			return nil, err
@@ -46,42 +46,94 @@ func (r *UserRepository) FindAll() ([]UserResponse, error) {
 	return users, nil
 }
 
-func (r *UserRepository) FindById(id int) (UserResponse, error) {
-	var user UserResponse
+func (r *UserRepository) FindById(id int) (User, error) {
+	var user User
 
 	err := r.DB.QueryRow(FindUserByIDQuery, id).
 		Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.Age)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return UserResponse{}, fmt.Errorf("%w: user with id %d", ErrUserNotFound, id)
+			return User{}, fmt.Errorf("%w: user with id %d", ErrUserNotFound, id)
 		}
-		return UserResponse{}, err
+		return User{}, err
 	}
 
 	return user, nil
 }
 
-func (r *UserRepository) Create(user User) (UserResponse, error) {
+func (r *UserRepository) Create(user CreateUserRequest) (User, error) {
 	hashedPassword, err := r.hashPassword(user.Password)
 	if err != nil {
-		return UserResponse{}, err
+		return User{}, err
 	}
-
-	err = r.DB.QueryRow(
+	result, err := r.DB.Exec(
 		CreateUserQuery,
 		user.FirstName, user.LastName, user.Email, user.Age, hashedPassword,
-	).Scan(&user.ID)
+	)
 	if err != nil {
-		return UserResponse{}, err
+		return User{}, err
 	}
-	return UserResponse{
-		ID:        user.ID,
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return User{}, err
+	}
+
+	return User{
+		ID:        int(id),
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
 		Email:     user.Email,
 		Age:       user.Age,
 	}, nil
+}
+
+func (r *UserRepository) Update(id int, user UpdateUserRequest) (User, error) {
+	currentUser, err := r.FindById(id)
+	if err != nil {
+		return User{}, err
+	}
+	// TODO: add mergo library to merge fields
+	if user.FirstName != nil {
+		currentUser.FirstName = *user.FirstName
+	}
+	if user.LastName != nil {
+		currentUser.LastName = *user.LastName
+	}
+	if user.Email != nil {
+		currentUser.Email = *user.Email
+	}
+	if user.Age != nil {
+		currentUser.Age = *user.Age
+	}
+	if user.Password != nil {
+		hashedPassword, err := r.hashPassword(*user.Password)
+		if err != nil {
+			return User{}, err
+		}
+		currentUser.Password = hashedPassword
+	}
+
+	result, err := r.DB.Exec(
+		UpdateUserQuery,
+		currentUser.FirstName, currentUser.LastName, currentUser.Email,
+		currentUser.Age, currentUser.Password, id,
+	)
+	if err != nil {
+		return User{}, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return User{}, err
+	}
+
+	if rowsAffected == 0 {
+		return User{}, fmt.Errorf("%w: user with id %d", ErrUserNotFound, id)
+	}
+
+	return currentUser, nil
 }
 
 func (r *UserRepository) Delete(id int) error {

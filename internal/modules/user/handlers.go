@@ -61,6 +61,32 @@ func (h *UserHandlers) CreateUser(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
+func (h *UserHandlers) UpdateUser(c *fiber.Ctx) error {
+	var input UpdateUserRequest
+
+	if err := c.BodyParser(&input); err != nil {
+		return utils.HandleError(c, err, fiber.StatusBadRequest)
+	}
+
+	if errors, err := utils.ValidateStruct(&input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":  "Validation failed",
+			"fields": errors,
+		})
+	}
+
+	id, err := c.ParamsInt("id")
+	if err != nil {
+		return utils.HandleError(c, err, fiber.StatusBadRequest)
+	}
+
+	user, err := h.Service.UpdateUser(id, input)
+	if err != nil {
+		return utils.HandleError(c, utils.MapSQLError(err), fiber.StatusInternalServerError)
+	}
+	return c.JSON(user)
+}
+
 func (h *UserHandlers) DeleteUser(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {

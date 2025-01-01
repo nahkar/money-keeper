@@ -18,6 +18,12 @@ const (
 		RETURNING user_id
 	`
 
+	UpdateUserQuery = `
+		UPDATE users 
+		SET first_name = $1, last_name = $2, email = $3, age = $4, password = $5
+		WHERE user_id = $6
+	`
+
 	DeleteUserQuery = `
 		DELETE FROM users 
 		WHERE user_id = $1
